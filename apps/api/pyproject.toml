@@ -11,6 +11,9 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.30",
   "asyncpg>=0.29.0",
   "alembic>=1.13.0",
+  "argon2-cffi>=23.1",
+  "pyjwt>=2.9",
+  "email-validator>=2.1",
 ]
 
 [project.optional-dependencies]

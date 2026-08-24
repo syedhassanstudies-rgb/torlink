@@ -1,9 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.auth import router as auth_router
+from app.api.auth import users_router
 from app.core.config import Settings, get_settings
-from app.torlink.client import TorlinkClient, TorlinkClientError, TorlinkUnavailableError
+from app.torlink.client import (
+    TorlinkClient,
+    TorlinkClientError,
+    TorlinkUnavailableError,
+)
 
 router = APIRouter(prefix="/api")
+router.include_router(auth_router)
+router.include_router(users_router)
 
 
 def get_torlink_client(settings: Settings = Depends(get_settings)) -> TorlinkClient:

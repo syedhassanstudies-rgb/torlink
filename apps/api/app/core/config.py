@@ -33,6 +33,13 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://torlink:torlink@localhost:5432/torlink"
     )
     db_echo: bool = False
+    # Auth
+    jwt_secret: str = Field(
+        default="dev-secret-change-me-0123456789abcdef0123456789abcdef"
+    )  # must be >=32 bytes for HS256; override in .env for any real use
+    jwt_algorithm: str = "HS256"
+    access_token_minutes: float = 15.0
+    refresh_token_days: float = 14.0
 
     model_config = SettingsConfigDict(
         env_prefix="TORLINK_API_",

@@ -6,6 +6,8 @@ select = ["E", "F", "I", "B", "UP"]
 [lint.per-file-ignores]
 # FastAPI's dependency-injection idiom requires Depends() in argument defaults.
 "app/api/router.py" = ["B008"]
+"app/api/auth.py" = ["B008"]
+"app/core/auth_deps.py" = ["B008"]
 
 # Generated migrations contain long autogenerate lines; don't lint them.
 "migrations/versions/*" = ["E501", "I001", "UP007", "UP035"]
