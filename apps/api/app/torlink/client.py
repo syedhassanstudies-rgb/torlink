@@ -23,7 +23,9 @@ class TorlinkHTTPError(TorlinkClientError):
 class TorlinkClient:
     """Small async client for the local torlink daemon."""
 
-    def __init__(self, base_url: str, token: str | None = None, timeout_seconds: float = 5.0) -> None:
+    def __init__(
+        self, base_url: str, token: str | None = None, timeout_seconds: float = 5.0
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.token = token
         self.timeout_seconds = timeout_seconds
@@ -36,7 +38,9 @@ class TorlinkClient:
     async def health(self) -> dict[str, Any]:
         return await self._request("GET", "/health", authenticated=False)
 
-    async def _request(self, method: str, path: str, *, authenticated: bool = True) -> dict[str, Any]:
+    async def _request(
+        self, method: str, path: str, *, authenticated: bool = True
+    ) -> dict[str, Any]:
         headers = self._headers() if authenticated else {}
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
