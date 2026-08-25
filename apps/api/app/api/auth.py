@@ -15,6 +15,7 @@ from app.api.schemas import (
 )
 from app.core.auth_deps import get_current_user, lookup_user_by_login, require_admin
 from app.core.config import get_settings
+from app.core.ratelimit import login_limiter
 from app.core.security import create_access_token, hash_password, verify_password
 from app.core.tokens import (
     issue_refresh_token,
@@ -53,8 +54,12 @@ async def _audit(
 
 @router.post("/login", response_model=TokenPair)
 async def login(
-    payload: LoginRequest, request: Request, session: AsyncSession = Depends(get_db_session)
+    payload: LoginRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
 ) -> TokenPair:
+    if get_settings().rate_limit_enabled:
+        login_limiter.check(request)
     meta = _client_meta(request)
     user = await lookup_user_by_login(session, payload.username_or_email)
 

@@ -11,13 +11,15 @@ user_settings.settings['save_search_history'] = False.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.downloads import get_torlink
 from app.core.auth_deps import get_current_user
+from app.core.config import get_settings
+from app.core.ratelimit import search_limiter
 from app.db.engine import get_db_session
 from app.models.search_history import SearchHistory
 from app.models.user import User
@@ -101,10 +103,13 @@ async def _daemon_search_or_error(client: TorlinkClient, query: str):
 @router.post("", response_model=SearchResponse)
 async def run_search(
     payload: SearchRequest,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
     client: TorlinkClient = Depends(get_torlink),
 ) -> SearchResponse:
+    if get_settings().rate_limit_enabled:
+        search_limiter.check(request)
     query = payload.query.strip()
     if not query:
         raise HTTPException(status_code=400, detail="query must not be empty")

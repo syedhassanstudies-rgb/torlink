@@ -9,7 +9,7 @@ Ownership rules enforced here:
 import re
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,7 @@ from app.api.download_schemas import (
 )
 from app.core.auth_deps import get_current_user
 from app.core.config import Settings, get_settings
+from app.core.ratelimit import add_download_limiter
 from app.db.engine import get_db_session
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.download_record import DownloadRecord, DownloadStatus
@@ -102,10 +103,13 @@ async def list_downloads(
 @router.post("", response_model=DownloadOut, status_code=201)
 async def create_download(
     payload: DownloadCreate,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
     client: TorlinkClient = Depends(get_torlink),
 ) -> DownloadRecord:
+    if get_settings().rate_limit_enabled:
+        add_download_limiter.check(request)
     if user.role not in (UserRole.ADMIN, UserRole.USER):
         raise HTTPException(status_code=403, detail="Readonly users cannot add downloads")
 

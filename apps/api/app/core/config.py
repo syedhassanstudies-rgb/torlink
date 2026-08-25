@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     # Local mirror of the Node daemon's downloadDir; must point at the same
     # directory the daemon writes completed downloads into.
     download_dir: str = ""
+    # Hardening
+    cors_origins: list[str] = Field(default_factory=list)  # explicit allow-list
+    max_body_bytes: int = 1_048_576  # 1 MiB cap for JSON bodies
+    rate_limit_enabled: bool = True
     database_url: str = Field(
         default="postgresql+asyncpg://torlink:torlink@localhost:5432/torlink"
     )
