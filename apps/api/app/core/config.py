@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     torlink_base_url: AnyHttpUrl = Field(default="http://127.0.0.1:9161")
     torlink_token: str | None = None
     torlink_timeout_seconds: float = 5.0
+    # Files server (torlnk files, port 9160): used to proxy streams so the
+    # daemon never has to be user-reachable.
+    files_base_url: AnyHttpUrl = Field(default="http://127.0.0.1:9160")
+    files_token: str | None = None
+    files_timeout_seconds: float = 30.0
+    # Local mirror of the Node daemon's downloadDir; must point at the same
+    # directory the daemon writes completed downloads into.
+    download_dir: str = ""
     database_url: str = Field(
         default="postgresql+asyncpg://torlink:torlink@localhost:5432/torlink"
     )

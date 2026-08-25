@@ -9,6 +9,7 @@ select = ["E", "F", "I", "B", "UP"]
 "app/api/auth.py" = ["B008"]
 "app/api/downloads.py" = ["B008"]
 "app/api/search.py" = ["B008"]
+"app/api/files.py" = ["B008"]
 "app/core/auth_deps.py" = ["B008"]
 
 # Generated migrations contain long autogenerate lines; don't lint them.

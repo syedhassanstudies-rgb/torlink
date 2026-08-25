@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.auth import router as auth_router
 from app.api.auth import users_router
 from app.api.downloads import router as downloads_router
+from app.api.files import router as files_router
 from app.api.search import router as search_router
 from app.core.config import Settings, get_settings
 from app.torlink.client import (
@@ -16,6 +17,7 @@ router.include_router(auth_router)
 router.include_router(users_router)
 router.include_router(downloads_router)
 router.include_router(search_router)
+router.include_router(files_router)
 
 
 def get_torlink_client(settings: Settings = Depends(get_settings)) -> TorlinkClient:
