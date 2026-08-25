@@ -5,6 +5,7 @@ from app.models.audit_log import AuditAction, AuditLog
 from app.models.download_record import DownloadRecord, DownloadStatus
 from app.models.file_record import FileRecord
 from app.models.refresh_token import RefreshToken
+from app.models.search_history import SearchHistory
 from app.models.user import User, UserRole
 from app.models.user_setting import UserSetting
 
@@ -16,6 +17,7 @@ __all__ = [
     "DownloadStatus",
     "FileRecord",
     "RefreshToken",
+    "SearchHistory",
     "User",
     "UserRole",
     "UserSetting",

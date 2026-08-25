@@ -53,6 +53,35 @@ class DaemonStatus(BaseModel):
     seeds: list[DaemonSeed] = Field(default_factory=list)
 
 
+class DaemonSearchResultItem(BaseModel):
+    """One search hit from the daemon's GET /search."""
+
+    info_hash: str = Field(alias="infoHash")
+    name: str
+    size_bytes: int = Field(default=0, alias="sizeBytes")
+    seeders: int = 0
+    leechers: int = 0
+    num_files: int | None = Field(default=None, alias="numFiles")
+    source: str
+    magnet: str
+    added: int | None = None
+
+    model_config = {"extra": "allow", "populate_by_name": True}
+
+
+class DaemonSearchResults(BaseModel):
+    """Full GET /search payload."""
+
+    ok: bool = True
+    query: str
+    elapsed_ms: int = Field(default=0, alias="elapsedMs")
+    timed_out: bool = Field(default=False, alias="timedOut")
+    results: list[DaemonSearchResultItem] = Field(default_factory=list)
+    sources: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+    model_config = {"extra": "allow", "populate_by_name": True}
+
+
 class AddOutcome(BaseModel):
     """POST /add result. `outcome` is daemon-defined (added/duplicate/etc)."""
 

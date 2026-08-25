@@ -18,6 +18,7 @@ import httpx
 from app.torlink.models import (
     AddOutcome,
     ControlAction,
+    DaemonSearchResults,
     DaemonStatus,
 )
 
@@ -82,6 +83,18 @@ class TorlinkClient:
             outcome=str(outcome) if outcome else None,
             raw=body,
         )
+
+    async def search(self, query: str) -> DaemonSearchResults:
+        """Run a multi-source search on the daemon (GET /search?q=...)."""
+
+        query = query.strip()
+        if not query:
+            raise TorlinkClientError("empty search query")
+        body = await self._request("GET", f"/search?q={httpx.QueryParams({'q': query})['q']}")
+        try:
+            return DaemonSearchResults.model_validate(body)
+        except ValueError as exc:
+            raise TorlinkClientError(f"unexpected /search payload: {exc}") from exc
 
     async def control(
         self,
