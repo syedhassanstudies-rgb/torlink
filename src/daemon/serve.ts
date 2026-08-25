@@ -11,6 +11,7 @@ import http from "node:http";
 import { startRuntime, addInput, type Runtime } from "./runtime";
 import { startSeedReaper } from "./seed-reaper";
 import { LOOPBACK_HOSTS, isAuthorized, hostHeaderOk } from "./auth";
+import { searchAll } from "../search/service";
 import { VERSION } from "../version";
 
 export { isAuthorized } from "./auth";
@@ -172,6 +173,12 @@ export async function handleApi(
     if (outcome === "invalid") return { status: 400, body: { error: "invalid magnet or info hash" } };
     return { status: 200, body: { ok: true, outcome } };
   }
+  if (method === "GET" && urlPath === "/search") {
+    // Real search handling needs the raw query string, which handleApi's
+    // signature doesn't carry. The request handler in runServe special-cases
+    // /search before calling this (see handleSearch below).
+    return { status: 500, body: { error: "internal routing error" } };
+  }
   if (method === "POST" && urlPath === "/control") {
     const req = parseControl(bodyText);
     if (!req) return { status: 400, body: { error: "missing or invalid { id, action }" } };
@@ -183,6 +190,43 @@ export async function handleApi(
     return { status: 200, body: { ok: true, id: req.id, action: req.action } };
   }
   return { status: 404, body: { error: "not found" } };
+}
+
+// GET /search?q=... — runs the shared search service across all sources.
+// Kept separate from handleApi because it needs the raw query string.
+export async function handleSearch(
+  token: string | null,
+  authHeader: string | undefined,
+  query: URLSearchParams,
+): Promise<ApiResponse> {
+  if (!isAuthorized(token, authHeader)) {
+    return { status: 401, body: { error: "unauthorized" } };
+  }
+  const q = (query.get("q") ?? "").trim();
+  if (!q) return { status: 400, body: { error: "missing q parameter" } };
+
+  const outcome = await searchAll(q, { sourceTimeoutMs: 10_000, totalTimeoutMs: 15_000 });
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      query: outcome.query,
+      elapsedMs: outcome.elapsedMs,
+      timedOut: outcome.timedOut,
+      results: outcome.results.map((r) => ({
+        infoHash: r.infoHash,
+        name: r.name,
+        sizeBytes: r.sizeBytes,
+        seeders: r.seeders,
+        leechers: r.leechers,
+        numFiles: r.numFiles ?? null,
+        source: r.source,
+        magnet: r.magnet,
+        added: r.added ?? null,
+      })),
+      sources: outcome.perSource,
+    },
+  };
 }
 
 // Read the body up to the size cap. On overflow resolve tooLarge immediately
@@ -244,13 +288,26 @@ export async function runServe(options: ServeOptions = {}): Promise<void> {
   const server = http.createServer((req, res) => {
     void (async () => {
       const method = req.method ?? "GET";
-      const urlPath = (req.url ?? "/").split("?")[0]!;
+      const rawUrl = req.url ?? "/";
+      const urlPath = rawUrl.split("?")[0]!;
       // Tokenless means loopback-bound; require a loopback Host so a hostile
       // webpage can't reach us through DNS rebinding.
       if (!token && !hostHeaderOk(req.headers.host)) {
         res.writeHead(403, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "forbidden host" }));
         log(`${method} ${urlPath} -> 403 (host)`);
+        return;
+      }
+      if (method === "GET" && urlPath === "/search") {
+        const out = await handleSearch(
+          token,
+          req.headers.authorization,
+          new URLSearchParams(rawUrl.split("?")[1] ?? ""),
+        );
+        const payload = JSON.stringify(out.body);
+        res.writeHead(out.status, { "Content-Type": "application/json" });
+        res.end(payload);
+        log(`GET /search -> ${out.status}`);
         return;
       }
       const body = method === "POST" ? await readBody(req) : { text: "", tooLarge: false };

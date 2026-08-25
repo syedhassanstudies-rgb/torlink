@@ -3,6 +3,7 @@ import { SOURCES } from "../../sources/registry";
 import { cachedSearch } from "../../sources/cache";
 import { HttpError } from "../../util/net";
 import type { SourceId, TorrentResult } from "../../sources/types";
+import { dedupe, defaultOrder } from "../../search/service";
 
 export interface SourceState {
   loading: boolean;
@@ -28,24 +29,6 @@ function blankPerSource(loading: boolean): Record<SourceId, SourceState> {
   const out = {} as Record<SourceId, SourceState>;
   for (const s of SOURCES) out[s.id] = { loading, error: null, code: null, count: 0 };
   return out;
-}
-
-function dedupe(list: TorrentResult[]): TorrentResult[] {
-  const byHash = new Map<string, TorrentResult>();
-  for (const r of list) {
-    const existing = byHash.get(r.infoHash);
-    if (!existing || r.seeders > existing.seeders) byHash.set(r.infoHash, r);
-  }
-  return [...byHash.values()];
-}
-
-// torlink's default ordering: healthiest first. The results view can re-sort
-// on demand (the `s` key), and its "none"/default state preserves this order.
-function defaultOrder(list: TorrentResult[]): TorrentResult[] {
-  return list.sort((a, b) => {
-    if (b.seeders !== a.seeders) return b.seeders - a.seeders;
-    return (b.added ?? 0) - (a.added ?? 0);
-  });
 }
 
 function idleState(): ConcurrentSearchState {
@@ -78,6 +61,8 @@ export function useConcurrentSearch(query: string): ConcurrentSearchState {
 
     const flush = (): void => {
       setState({
+        // Shared ordering/dedupe lives in search/service.ts (also used by
+        // the headless daemon's GET /search) so TUI and API agree.
         results: defaultOrder(dedupe(collected.slice())),
         perSource: { ...per },
         loading: done < SOURCES.length,
