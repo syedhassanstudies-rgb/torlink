@@ -7,6 +7,7 @@ select = ["E", "F", "I", "B", "UP"]
 # FastAPI's dependency-injection idiom requires Depends() in argument defaults.
 "app/api/router.py" = ["B008"]
 "app/api/auth.py" = ["B008"]
+"app/api/downloads.py" = ["B008"]
 "app/core/auth_deps.py" = ["B008"]
 
 # Generated migrations contain long autogenerate lines; don't lint them.

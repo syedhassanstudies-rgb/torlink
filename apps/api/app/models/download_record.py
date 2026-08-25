@@ -9,7 +9,7 @@ daemon-assigned torrent id captured at creation time.
 import enum
 import uuid
 
-from sqlalchemy import BigInteger, Enum, ForeignKey, Index, String
+from sqlalchemy import BigInteger, Boolean, Enum, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -56,7 +56,14 @@ class DownloadRecord(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     magnet_uri: Mapped[str | None] = mapped_column(String(2048))
     category: Mapped[str | None] = mapped_column(String(64))
     label: Mapped[str | None] = mapped_column(String(128))
+    # Where the download request came from (search / manual / api key...).
+    source: Mapped[str] = mapped_column(
+        String(64), default="manual", server_default="manual", nullable=False
+    )
     size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    is_deletion_allowed: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true", nullable=False
+    )
 
     def __repr__(self) -> str:  # pragma: no cover - debug aid
         return f"<DownloadRecord {self.info_hash} {self.status.value}>"
